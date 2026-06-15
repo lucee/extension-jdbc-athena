@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.lucee</groupId>
     <artifactId>athena-jdbc-extension</artifactId>
-    <version>2026.7.2</version>
+    <version>2026.7.3</version>
     <packaging>pom</packaging>
     <name>Amazon Athena</name>
     <properties>
