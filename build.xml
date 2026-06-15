@@ -8,7 +8,7 @@
   <property name="id" value="7E673D15-D87C-41A6-8B5F1956528C605F"/>
   -->
   <property name="temp" location="temp"/>
-  <property name="dist"  location="dist"/>
+  <property name="dist"  location="target"/>
 
   <scriptdef name="trim" language="javascript">
      <attribute name="text" />
@@ -16,6 +16,23 @@
      <![CDATA[
       var text = attributes.get("text");
       project.setProperty(attributes.get("property"), text.trim());
+     ]]>
+  </scriptdef>
+  
+  <scriptdef name="replace" language="javascript">
+     <attribute name="haystack" />
+     <attribute name="needle" />
+     <attribute name="repl" />
+     <attribute name="property" />
+     <![CDATA[
+      var text = attributes.get("haystack");
+      var needle = attributes.get("needle");
+      var repl = attributes.get("repl");
+      text=text.trim();
+
+      var regex = new RegExp(needle,'g');
+      text=text.replace(regex,repl);
+      project.setProperty(attributes.get("property"), text);
      ]]>
   </scriptdef>
 
@@ -47,22 +64,6 @@
   </scriptdef>
   
 
-  <scriptdef name="replace" language="javascript">
-     <attribute name="haystack" />
-     <attribute name="needle" />
-     <attribute name="repl" />
-     <attribute name="property" />
-     <![CDATA[
-      var text = attributes.get("haystack");
-      var needle = attributes.get("needle");
-      var repl = attributes.get("repl");
-      text=text.trim();
-
-      var regex = new RegExp(needle,'g');
-      text=text.replace(regex,repl);
-      project.setProperty(attributes.get("property"), text);
-     ]]>
-  </scriptdef>
 
   <scriptdef name="getDirFrom" language="javascript">
      <attribute name="path" />
@@ -154,7 +155,7 @@
     </path>
     <property name="jar" refid="path.jar"/>
     <getNameFrom path="${jar}" property="jarName"/>
-
+    
     <!-- logo
     
     <path id="path.logo">
@@ -176,22 +177,23 @@
     <getNameFrom path="${cfc}" property="cfcName"/>
 
 
-    <property file="./build.properties"/>
     <unwrap text="${id}" property="id"/>
     <unwrap text="${label}" property="label"/>
     <unwrap text="${description}" property="desc"/>
 
+    <echo message="==================="/>
     <echo message="${id}"/>
     <echo message="${label}"/>
     <echo message="${desc}"/>
     <echo message="${jar}"/>
     <echo message="${cfc}"/>
     <echo message="${cfcName}"/>
-    <echo message="${dir}"/>
-    <echo message="${prop}"/>
+    <echo message="${connstr}"/>
+    <echo message="${jdbcid}"/>
 
 
     <!-- Read mf entries -->
+    <echo message="load manifest from ${jar}"/>
     <loadmf jar="${jar}" prefix="manifest."/>
     <trim text="${manifest.Bundle-SymbolicName}" property="symbolicName"/>
     <trim text="${manifest.Bundle-Version}" property="symbolicVersion"/>
@@ -232,23 +234,25 @@
 Built-Date: ${NOW}
 version: "${symbolicVersion}"
 id: "${id}"
+groupId: "${groupId}"
+artifactId: "${artifactId}"
 name: "${label}"
 description: "${desc}"
 category: "Datasource"
-lucee-core-version: "5.0.0.019"
+lucee-core-version: "${luceeCoreVersion}"
 start-bundles: false
 jdbc: "[{'label':'${label}','id':'${jdbcid}','connectionString':'${_connstr}','class':'${className}','bundleName':'${symbolicName}','bundleVersion':'${symbolicVersion}'}]"
 </echo>
 
-    <!-- copy the jars necessary -->
+    <!-- copy the jars necessary
     <copy todir="${distl}/jars/">
       <fileset dir=".">
         <include name="*.jar"/>
       </fileset>
-    </copy>
-    <!-- <copy file="${jar}" tofile="${distl}/jars/${jarName}"/> -->
+    </copy> -->
+    <copy file="${jar}" tofile="${distl}/jars/${symbolicName}-${symbolicVersion}.jar"/>
     
-    <!-- copy the component necessary -->
+    <!-- copy the cfcs necessary -->
     <copy file="${cfc}" tofile="${distl}/context/admin/dbdriver/${cfcName}"/>
     <loadfile property="content1" srcFile="${distl}/context/admin/dbdriver/${cfcName}" />
     <replace haystack="${content1}" needle="{class-name}" repl="${className}" property="content2"/>
@@ -256,8 +260,9 @@ jdbc: "[{'label':'${label}','id':'${jdbcid}','connectionString':'${_connstr}','c
     <replace haystack="${content3}" needle="{id}" repl="${jdbcid}" property="content4"/>
     <replace haystack="${content4}" needle="{label}" repl="${label}" property="content5"/>
     <replace haystack="${content5}" needle="{description}" repl="${desc}" property="content6"/>
-    <replace haystack="${content6}" needle="{connstr}" repl="${_connstr}" property="content7"/>
+    <replace haystack="${content6}" needle="{connection-string}" repl="${_connstr}" property="content7"/>
     <echo message="${content7}" file="${distl}/context/admin/dbdriver/${cfcName}"/>
+
 
     <!-- copy optional logo -->
     <copy todir="${distl}/META-INF">
@@ -269,7 +274,7 @@ jdbc: "[{'label':'${label}','id':'${jdbcid}','connectionString':'${_connstr}','c
     
 
     <!-- Zip everything  -->
-     <zip destfile="${dist}/${manifest.Bundle-SymbolicName}-${manifest.Bundle-Version}.lex">
+     <zip destfile="${dist}/${filename}-${manifest.Bundle-Version}.lex">
         <zipfileset dir="${distl}"/>
     </zip>    
   </target>
